@@ -15,36 +15,49 @@ import { ReleaseSummary } from '../../models/release-notes'
 import { Banner } from './banner'
 import { ReleaseNotesUri } from '../lib/releases'
 import { RichText } from '../lib/rich-text'
+import { Emoji } from '../../lib/emoji'
 
 interface IUpdateAvailableProps {
   readonly dispatcher: Dispatcher
   readonly newReleases: ReadonlyArray<ReleaseSummary> | null
   readonly isX64ToARM64ImmediateAutoUpdate: boolean
   readonly isUpdateShowcaseVisible: boolean
-  readonly emoji: Map<string, string>
+  readonly emoji: Map<string, Emoji>
   readonly onDismissed: () => void
+  readonly prioritizeUpdate: boolean
+  readonly prioritizeUpdateInfoUrl: string | undefined
 }
 
 /**
  * A component which tells the user an update is available and gives them the
  * option of moving into the future or being a luddite.
  */
-export class UpdateAvailable extends React.Component<
-  IUpdateAvailableProps,
-  {}
-> {
+export class UpdateAvailable extends React.Component<IUpdateAvailableProps> {
   public render() {
     return (
-      <Banner id="update-available" onDismissed={this.props.onDismissed}>
-        {!this.props.isUpdateShowcaseVisible && (
-          <Octicon
-            className="download-icon"
-            symbol={octicons.desktopDownload}
-          />
-        )}
-
+      <Banner
+        id="update-available"
+        className={this.props.prioritizeUpdate ? 'priority' : undefined}
+        dismissable={!this.props.prioritizeUpdate}
+        onDismissed={this.props.onDismissed}
+      >
+        {this.renderIcon()}
         {this.renderMessage()}
       </Banner>
+    )
+  }
+
+  private renderIcon() {
+    if (this.props.isUpdateShowcaseVisible) {
+      return null
+    }
+
+    if (this.props.prioritizeUpdate) {
+      return <Octicon className="warning-icon" symbol={octicons.alert} />
+    }
+
+    return (
+      <Octicon className="download-icon" symbol={octicons.desktopDownload} />
     )
   }
 
@@ -82,6 +95,26 @@ export class UpdateAvailable extends React.Component<
             dismiss
           </LinkButton>
           .
+        </span>
+      )
+    }
+
+    if (this.props.prioritizeUpdate) {
+      return (
+        <span onSubmit={this.updateNow}>
+          This version of GitHub Desktop is missing{' '}
+          {this.props.prioritizeUpdateInfoUrl ? (
+            <LinkButton uri={this.props.prioritizeUpdateInfoUrl}>
+              important updates
+            </LinkButton>
+          ) : (
+            'important updates'
+          )}
+          . Please{' '}
+          <LinkButton onClick={this.updateNow}>
+            restart GitHub Desktop
+          </LinkButton>{' '}
+          now to install pending updates.
         </span>
       )
     }
